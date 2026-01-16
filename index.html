@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喵语加密器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .input-area, .output-area {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-size: 16px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .encrypt-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .decrypt-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .copy-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+        
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+        
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐱 喵语加密器</h1>
+        
+        <div class="input-area">
+            <h3>输入原文：</h3>
+            <textarea id="inputText" placeholder="请输入您想要加密的内容..."></textarea>
+        </div>
+        
+        <div class="button-group">
+            <button class="encrypt-btn" onclick="encrypt()">加密 →</button>
+            <button class="decrypt-btn" onclick="decrypt()">← 解密</button>
+            <button class="copy-btn" onclick="copyResult()">复制结果</button>
+        </div>
+        
+        <div class="output-area">
+            <h3>喵语结果：</h3>
+            <textarea id="outputText" placeholder="加密或解密后的内容将显示在这里..." readonly></textarea>
+        </div>
+        
+        <div class="info">
+            <p><strong>说明：</strong>本工具将您的文本转换为仅包含"喵"和"~"的特殊语言。加密时，每个字符会被转换为"喵"和"~"的组合；解密时则反向转换回来。</p>
+            <p>支持所有Unicode字符，包括中文、英文和其他符号。</p>
+        </div>
+        
+        <div id="errorMessage" class="error"></div>
+    </div>
+
+    <script>
+        // 加密函数：将输入文本转换为喵语
+        function encrypt() {
+            const input = document.getElementById('inputText').value;
+            if (!input) {
+                showError("请输入要加密的内容！");
+                return;
+            }
+            
+            let result = '';
+            // 修改：使用扩展的字符串遍历方式支持emoji
+            for (const char of input) {
+                // 获取字符的代码点，支持emoji
+                const code = char.codePointAt(0);
+                
+                // 将数字转换为二进制
+                const binary = code.toString(2);
+                
+                // 将二进制中的0和1转换为喵语模式
+                // 0 -> "喵" (单个喵代表0)
+                // 1 -> "喵~" (喵加波浪号代表1)，这样减少了"~"的使用
+                let encodedChar = '';
+                for (let j = 0; j < binary.length; j++) {
+                    if (binary[j] === '0') {
+                        encodedChar += '喵';  // 单个喵代表0
+                    } else { // binary[j] === '1'
+                        encodedChar += '喵~';  // 喵加波浪号代表1
+                    }
+                }
+                
+                // 使用"~~"作为分隔符
+                result += encodedChar + '~~';
+            }
+            
+            // 移除最后一个多余的分隔符
+            document.getElementById('outputText').value = result.slice(0, -2);
+            hideError();
+        }
+
+        // 解密函数：将喵语转换回原始文本
+        function decrypt() {
+            const input = document.getElementById('outputText').value;
+            if (!input) {
+                showError("请先输入喵语内容或进行加密！");
+                return;
+            }
+            
+            try {
+                let result = '';
+                // 按"~~"分割不同的字符
+                const parts = input.split('~~');
+                
+                for (let part of parts) {
+                    if (!part) continue;
+                    
+                    // 将喵语转换回二进制
+                    let binary = '';
+                    let i = 0;
+                    while (i < part.length) {
+                        if (part[i] === '喵') {
+                            // 检查下一个字符是否是~
+                            if (i + 1 < part.length && part[i + 1] === '~') {
+                                binary += '1';  // 喵~代表1
+                                i += 2;  // 跳过下一个波浪号
+                            } else {
+                                binary += '0';  // 单个喵代表0
+                                i++;  // 只移动一位
+                            }
+                        } else {
+                            // 如果遇到了非喵非~的字符，说明格式有问题
+                            throw new Error("无效的喵语字符");
+                        }
+                    }
+                    
+                    // 验证二进制字符串是否只包含0和1
+                    if (!/^[01]+$/.test(binary)) {
+                        throw new Error("无效的二进制格式");
+                    }
+                    
+                    // 将二进制转换为十进制（代码点值）
+                    const decimal = parseInt(binary, 2);
+                    
+                    // 验证代码点值是否有效
+                    if (isNaN(decimal) || decimal < 0 || decimal > 0x10FFFF) {
+                        throw new Error("无效的代码点值");
+                    }
+                    
+                    // 将代码点值转换为字符，支持emoji
+                    result += String.fromCodePoint(decimal);
+                }
+                
+                document.getElementById('inputText').value = result;
+                hideError();
+            } catch (e) {
+                console.error("解密错误详情:", e);  // 添加调试信息
+                showError("解密失败：" + e.message + "！请检查输入的喵语格式是否正确。");
+            }
+        }
+
+        // 复制结果到剪贴板
+        function copyResult() {
+            const outputText = document.getElementById('outputText');
+            if (!outputText.value) {
+                showError("没有内容可复制！");
+                return;
+            }
+            
+            outputText.select();
+            document.execCommand('copy');
+            
+            // 显示确认消息
+            // alert("已复制到剪贴板！");
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+        }
+
+        // 隐藏错误消息
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '';
+        }
+
+        // 提供快捷键支持
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'e':
+                        e.preventDefault();
+                        encrypt();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        decrypt();
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        copyResult();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
